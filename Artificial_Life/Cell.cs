@@ -10,6 +10,7 @@ using System.Windows.Data;
 using ExtensionLibrary;
 using System.Threading;
 using System.Windows.Markup;
+using System.Text;
 
 namespace Artificial_Life
 {
@@ -18,10 +19,11 @@ namespace Artificial_Life
         private Rectangle rectangle;
         public int X { get; set; } // координаты клетки ширина
         public int Y { get; set; } // координаты клетки высота
-        private int[] genome; // геном клетки
+        public int[] genome; // геном клетки
         private int pointer; // указатель на текущее действие клетки
         private int health; // здоровье клетки
         MainWindow window;
+        private Random r = new Random();
         int counterForMove = 0;
         static int MaxHealth { get; set; } // максимальное здоровье клетки
         static Cell()
@@ -36,9 +38,8 @@ namespace Artificial_Life
         public Cell(int i, int size, MainWindow window)
         {
             this.window = window;
-            health = 10;
-            pointer = 0;
-            var r = new Random();
+            health = 15;
+            pointer = 0;            
             genome = new int[64];
             for (int k = 0; k < 64; k++)
                 genome[k] = r.Next(0, 64);
@@ -64,45 +65,58 @@ namespace Artificial_Life
         #endregion
 
         #region Методы
+        public override string ToString()
+        {
+            StringBuilder str = new StringBuilder();
+            foreach (var e in genome)
+                str.Append( e.ToString() + " ");
+            return $"{str}\n";
+        }
         /// <summary>
         /// Определяет поведение клетки
         /// </summary>
-        public void Logic()
+        public bool Logic()
         {
             counterForMove++;
             pointer %= 64;
-            if (counterForMove < 15)
+            bool result = false;
+            if (counterForMove < 8)
                 if (genome[pointer] <= 7) // сделать шаг
                 {
-                    if (!Move(genome[pointer]))
-                        Logic();
-                    else
+                    if (Move(genome[pointer]))
+                    {
                         health--;
+                        result = true;
+                    }
                 }
                 else if (genome[pointer] <= 15) // схватить
                 {
-                    if (!Take(genome[pointer] % 8))
-                        Logic();
-                    else
+                    if (Take(genome[pointer] % 8))
+                    {
                         health--;
+                        result = true;
+                    }
                 }
                 else if (genome[pointer] <= 23) // посмотреть
                 {
                     See(genome[pointer] % 8);
-                    Logic();
                 }
                 else // безусловный переход
+                {
                     pointer = (pointer + genome[pointer]) % 64;
+                }
             else
             {
                 health--;
-                if (health <= 0)
-                {
-                    window.field[this.Y, this.X] = -1;
-                    window.cells.Remove(this);
-                }
+                result = true;                
                 counterForMove = 0;
             }
+            if (health <= 0)
+            {
+                window.field[this.X, this.Y] = -1;
+                window.cells.Remove(this);
+            }
+            return result;
         }
         /// <summary>
         /// Команда просмотра след поля
@@ -122,17 +136,17 @@ namespace Artificial_Life
                     }
                 case 1:
                     {
-                        CheckForSee(0, -1);
+                        CheckForSee(-1, 0);
                         break;
                     }
                 case 2:
                     {
-                        CheckForSee(1, -1);
+                        CheckForSee(-1, 1);
                         break;
                     }
                 case 3:
                     {
-                        CheckForSee(1, 0);
+                        CheckForSee(0, 1);
                         break;
                     }
                 case 4:
@@ -142,17 +156,17 @@ namespace Artificial_Life
                     }
                 case 5:
                     {
-                        CheckForSee(0, 1);
+                        CheckForSee(1, 0);
                         break;
                     }
                 case 6:
                     {
-                        CheckForSee(-1, 1);
+                        CheckForSee(1, -1);
                         break;
                     }
                 case 7:
                     {
-                        CheckForSee(-1, 0);
+                        CheckForSee(0, -1);
                         break;
                     }
             }
@@ -164,17 +178,17 @@ namespace Artificial_Life
         /// <param name="y"></param>
         private void CheckForSee(int x, int y)
         {
-            int Xcoord = (X + x + window.field.GetLength(1)) % window.field.GetLength(1);
-            int Ycoord = (Y + y + window.field.GetLength(0)) % window.field.GetLength(0);
-            if (window.field[Ycoord, Xcoord] == -1) // пустое поле
+            int Xcoord = (X + x + window.field.GetLength(0)) % window.field.GetLength(0);
+            int Ycoord = (Y + y + window.field.GetLength(1)) % window.field.GetLength(1);
+            if (window.field[Xcoord, Ycoord] == -1) // пустое поле
                 pointer += 5;
-            else if (window.field[Ycoord, Xcoord] == 0) // бот
+            else if (window.field[Xcoord, Ycoord] == 0) // бот
                 pointer += 3;
-            else if (window.field[Ycoord, Xcoord] == 1) // стена
+            else if (window.field[Xcoord, Ycoord] == 1) // стена
                 pointer += 2;
-            else if (window.field[Ycoord, Xcoord] == 3) // яд
+            else if (window.field[Xcoord, Ycoord] == 3) // яд
                 pointer++;
-            else if (window.field[Ycoord, Xcoord] == 4) // еда
+            else if (window.field[Xcoord, Ycoord] == 4) // еда
                 pointer += 4;
         }
         private bool Take(int v)
@@ -192,17 +206,17 @@ namespace Artificial_Life
                     }
                 case 1:
                     {
-                        result = CheckForTake(0, -1);
+                        result = CheckForTake(-1, 0);
                         break;
                     }
                 case 2:
                     {
-                        result = CheckForTake(1, -1);
+                        result = CheckForTake(-1, 1);
                         break;
                     }
                 case 3:
                     {
-                        result = CheckForTake(1, 0);
+                        result = CheckForTake(0, 1);
                         break;
                     }
                 case 4:
@@ -212,17 +226,17 @@ namespace Artificial_Life
                     }
                 case 5:
                     {
-                        result = CheckForTake(0, 1);
+                        result = CheckForTake(1, 0);
                         break;
                     }
                 case 6:
                     {
-                        result = CheckForTake(-1, 1);
+                        result = CheckForTake(1, -1);
                         break;
                     }
                 case 7:
                     {
-                        result = CheckForTake(-1, 0);
+                        result = CheckForTake(0, -1);
                         break;
                     }
             }
@@ -237,26 +251,26 @@ namespace Artificial_Life
         /// <returns></returns>
         private bool CheckForTake(int x, int y)
         {
-            int Xcoord = (X + x + window.field.GetLength(1)) % window.field.GetLength(1);
-            int Ycoord = (Y + y + window.field.GetLength(0)) % window.field.GetLength(0);
-            if (window.field[Ycoord, Xcoord] == -1) // пустое поле
+            int Xcoord = (X + x + window.field.GetLength(0)) % window.field.GetLength(0);
+            int Ycoord = (Y + y + window.field.GetLength(1)) % window.field.GetLength(1);
+            if (window.field[Xcoord, Ycoord] == -1) // пустое поле
                 pointer += 5;
-            else if (window.field[Ycoord, Xcoord] == 0) // бот
+            else if (window.field[Xcoord, Ycoord] == 0) // бот
                 pointer += 3;
-            else if (window.field[Ycoord, Xcoord] == 1) // стена
+            else if (window.field[Xcoord, Ycoord] == 1) // стена
                 pointer += 2;
-            else if (window.field[Ycoord, Xcoord] == 3) // яд
+            else if (window.field[Xcoord, Ycoord] == 3) // яд
             {
                 pointer++;
-                window.field[Ycoord, Xcoord] = 4; // бот преобразует яд в еду
+                window.field[Xcoord, Ycoord] = 4; // бот преобразует яд в еду
                 return true;
             }
-            else if (window.field[Ycoord, Xcoord] == 4) // еда
+            else if (window.field[Xcoord, Ycoord] == 4) // еда
             {
                 if (health + 10 <= MaxHealth)
                 {
                     health += 10;
-                    window.field[Ycoord, Xcoord] = -1;
+                    window.field[Xcoord, Ycoord] = -1;
                 }
                 pointer += 4;
                 return true;
@@ -278,17 +292,17 @@ namespace Artificial_Life
                     }
                 case 1:
                     {
-                        result = CheckForMove(0, -1);
+                        result = CheckForMove(-1, 0);
                         break;
                     }
                 case 2:
                     {
-                        result = CheckForMove(1, -1);
+                        result = CheckForMove(-1, 1);
                         break;
                     }
                 case 3:
                     {
-                        result = CheckForMove(1, 0);
+                        result = CheckForMove(0, 1);
                         break;
                     }
                 case 4:
@@ -298,17 +312,17 @@ namespace Artificial_Life
                     }
                 case 5:
                     {
-                        result = CheckForMove(0, 1);
+                        result = CheckForMove(1, 0);
                         break;
                     }
                 case 6:
                     {
-                        result = CheckForMove(-1, 1);
+                        result = CheckForMove(1, -1);
                         break;
                     }
                 case 7:
                     {
-                        result = CheckForMove(-1, 0);
+                        result = CheckForMove(0, -1);
                         break;
                     }
             }
@@ -322,34 +336,34 @@ namespace Artificial_Life
         /// <returns></returns>
         private bool CheckForMove(int x, int y)
         {
-            int Xcoord = (X + x + window.field.GetLength(1)) % window.field.GetLength(1);
-            int Ycoord = (Y + y + window.field.GetLength(0)) % window.field.GetLength(0);
-            if (window.field[Ycoord, Xcoord] == -1) // пустое поле
+            int Xcoord = (X + x + window.field.GetLength(0)) % window.field.GetLength(0); // отвечает за расположение по вертикали
+            int Ycoord = (Y + y + window.field.GetLength(1)) % window.field.GetLength(1); // отвечает за расположение по горизонтали
+            if (window.field[Xcoord, Ycoord] == -1) // пустое поле
             {
                 pointer += 5;
-                window.field[Y, X] = -1;
+                window.field[X, Y] = -1;
                 X = Xcoord;
                 Y = Ycoord;
-                window.field[Y, X] = 0;
+                window.field[X, Y] = 0;
                 return true;
             }
-            else if (window.field[Ycoord, Xcoord] == 0) // бот
+            else if (window.field[Xcoord, Ycoord] == 0) // бот
                 pointer += 3;
-            else if (window.field[Ycoord, Xcoord] == 1) // стена
+            else if (window.field[Xcoord, Ycoord] == 1) // стена
                 pointer += 2;
-            else if (window.field[Ycoord, Xcoord] == 3) // яд
+            else if (window.field[Xcoord, Ycoord] == 3) // яд
             {
                 pointer++;
-                window.field[Y, X] = 3; // бот становится ядом
-                window.cells.Remove(this);
+                window.field[X, Y] = 3; // бот становится ядом
+                health = 0;
                 return true;
             }
-            else if (window.field[Ycoord, Xcoord] == 4) // еда
+            else if (window.field[Xcoord, Ycoord] == 4) // еда
             {
-                window.field[Y, X] = -1;
+                window.field[X, Y] = -1;
                 X = Xcoord;
                 Y = Ycoord;
-                window.field[Y, X] = 0;
+                window.field[X, Y] = 0;
                 pointer += 4;
                 if (health + 10 <= MaxHealth)
                     health += 10;

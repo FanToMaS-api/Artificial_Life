@@ -8,6 +8,7 @@
         ResizeMode="CanMinimize"
         WindowState="Maximized"
         Background="Black"
+        Closing="Window_Closing"
         Width="1384"
         Height="775">
     <Grid>        
@@ -27,7 +28,8 @@
             <Button Content="Старт"
                     Margin="3,3,6,3"
                     x:Name="Start"
-                    Click="Start_Click">
+                    Click="Start_Click"
+                    IsDefault="True">
                 <Button.Style>
                     <Style  TargetType="Button">
                         <Setter Property="Background" Value="#614b3e"/>
@@ -126,6 +128,13 @@
                     </ControlTemplate>
                 </Button.Template>
             </Button>
+            <TextBlock x:Name="textBlockLifeTimeOfLastGen"
+                       Foreground="White"
+                       FontSize="20"
+                       Margin="15,0,0,0"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       FontWeight="Medium"/>
         </StackPanel>
         <TextBlock Grid.Row="0"
                    Text="Made by Дулов Михаил"
